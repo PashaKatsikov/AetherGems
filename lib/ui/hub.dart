@@ -574,7 +574,7 @@ class SettingsPage extends StatelessWidget {
                       trailing: const Icon(Icons.chevron_right, color: C.gold),
                       onTap: () => bag.openLegal(
                         'Privacy Policy',
-                        'https://aethergems.site/privacy-policy.html',
+                        'https://aethergems.link/privacy-policy',
                         privacy: true,
                       ),
                     ),
@@ -584,7 +584,7 @@ class SettingsPage extends StatelessWidget {
                       trailing: const Icon(Icons.chevron_right, color: C.gold),
                       onTap: () => bag.openLegal(
                         'Support',
-                        'https://aethergems.site/support.html',
+                        'https://aethergems.link/support',
                       ),
                     ),
                   ],

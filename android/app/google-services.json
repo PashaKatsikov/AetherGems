@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "365250523808",
+    "project_id": "aether-gems",
+    "storage_bucket": "aether-gems.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:365250523808:android:20fff1778b91e55d1c8fc5",
+        "android_client_info": {
+          "package_name": "com.crystalpeak.aethergems"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzQQ2QA0TQ1bN8PnFB0rcGKmKsBzBAAJM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
