@@ -350,7 +350,7 @@ class UpgradesPage extends StatelessWidget {
     if (bag.save.crystals < c) return;
     bag.save.crystals -= c;
     apply();
-    bag.audio.play('Aether_Gems_sounds_assets/Reward_Received_asset.mp3');
+    bag.audio.play('Aether_Gems_sounds_assets/AetherGems_Reward_Received.mp3');
     bag.save.write();
     bag.refresh();
   }
@@ -505,7 +505,7 @@ class _GodCard extends StatelessWidget {
                     if (bag.save.rare < cost) return;
                     bag.save.rare -= cost;
                     bag.save.gods.add(id);
-                    bag.audio.play('Aether_Gems_sounds_assets/Reward_Received_asset.mp3');
+                    bag.audio.play('Aether_Gems_sounds_assets/AetherGems_Reward_Received.mp3');
                     bag.save.write();
                     bag.refresh();
                   },

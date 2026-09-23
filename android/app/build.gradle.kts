@@ -41,7 +41,7 @@ android {
     defaultConfig {
         applicationId = "com.crystalpeak.aethergems"
         minSdk = 25
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

@@ -157,136 +157,108 @@ void main() {
 })();
 ''';
 
-  // Keyboard seating. The window never moves, so the page lifts its own
-  // focused field: a fixed-position host is glided up with a transform,
-  // anything else is scrolled into the gap above the keyboard. Occupancy
-  // (0..1 of the viewport eaten by the IME) is pushed in from Dart.
+  // Keyboard seating. The lift is recomputed from the field's live position
+  // every pass (current rect plus whatever we already hold it up by) and is
+  // applied without a CSS transition, so the measurement is always exact.
+  // That way a page that scrolls itself after focus - which is what threw
+  // the first portrait open - simply gets corrected on the next pass instead
+  // of stacking a second displacement on ours.
   const String jsSeat = r'''
-(function(){
-  if (window.__k3Seat) { return; }
-  window.__k3Seat = 1;
+(function () {
+  var MARK = '__k3Roost';
+  if (window[MARK] && window[MARK].live) { return; }
 
-  var occupancy = 0;
+  var LIMIT = 0.9;
+  var SLACK = 4;
+  var state = { part: 0, shell: null, base: '', lift: 0 };
   var frame = 0;
-  var gen = 0;
-  var held = { field: null, host: null, bottom: 0, shift: -1 };
-  var CEIL = 0.91;
-  var GAP = 6;
-  var GLIDE = 'transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1)';
 
-  function margin(){
-    var raw = Math.round(window.innerHeight * 0.018);
-    if (raw < 8) { return 8; }
-    return raw > 21 ? 21 : raw;
+  function gapPx() {
+    var v = (window.innerHeight * 0.015) | 0;
+    if (v < 6) { return 6; }
+    return v > 16 ? 16 : v;
   }
-  function collapsed(){
-    var vv = window.visualViewport;
-    if (!vv || !(vv.height > 0)) { return false; }
-    return (window.innerHeight - vv.height) > 1;
-  }
-  function editable(){
+  function target() {
     var node = document.activeElement;
     if (!node || !node.tagName) { return null; }
     if (node.isContentEditable === true) { return node; }
-    var tag = ('' + node.tagName).toUpperCase();
-    if (tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'INPUT') { return node; }
-    return null;
+    var tag = node.tagName.toLowerCase();
+    return (tag === 'input' || tag === 'textarea' || tag === 'select') ? node : null;
   }
-  function pinned(node){
-    for (var cur = node ? node.parentElement : null; cur && cur !== document.body; cur = cur.parentElement){
-      if (window.getComputedStyle(cur).position === 'fixed') { return cur; }
+  function anchored(node) {
+    var up = node.parentElement;
+    while (up && up !== document.body) {
+      if (getComputedStyle(up).position === 'fixed') { return up; }
+      up = up.parentElement;
     }
     return null;
   }
-  function keyboardTop(){
-    if (occupancy > 0){
-      var used = occupancy > CEIL ? CEIL : occupancy;
-      return window.innerHeight * (1 - used);
-    }
-    if (collapsed()){
-      var vv = window.visualViewport;
-      return vv.offsetTop + vv.height;
-    }
-    return window.innerHeight;
+  function keysTop() {
+    var p = state.part > LIMIT ? LIMIT : state.part;
+    return window.innerHeight * (1 - p);
   }
-  function origins(el){
-    if (typeof el.__k3Tx0 !== 'string') { el.__k3Tx0 = el.style.transform || ''; }
-    if (typeof el.__k3Tr0 !== 'string') { el.__k3Tr0 = el.style.transition || ''; }
+  function clear() {
+    if (state.shell) { state.shell.style.transform = state.base; }
+    state.shell = null;
+    state.base = '';
+    state.lift = 0;
   }
-  function letGo(instant){
-    var host = held.host;
-    held = { field: null, host: null, bottom: 0, shift: -1 };
-    if (!host) { return; }
-    var tx0 = (typeof host.__k3Tx0 === 'string') ? host.__k3Tx0 : '';
-    var tr0 = (typeof host.__k3Tr0 === 'string') ? host.__k3Tr0 : '';
-    host.style.transform = tx0;
-    if (instant){
-      host.style.transition = tr0;
+  function move(px) {
+    if (px === state.lift) { return; }
+    state.lift = px;
+    var shift = 'translate3d(0px,' + (-px) + 'px,0px)';
+    state.shell.style.transform = state.base ? (state.base + ' ' + shift) : shift;
+  }
+  function settle() {
+    var node = target();
+    if (!node || !(state.part > 0)) { clear(); return; }
+
+    var shell = anchored(node);
+    var top = keysTop();
+    if (!shell) {
+      clear();
+      var under = node.getBoundingClientRect().bottom + gapPx() - top;
+      if (under > SLACK) { window.scrollBy(0, under); }
       return;
     }
-    var mark = ++gen;
-    window.setTimeout(function(){
-      if (mark === gen && held.host !== host) { host.style.transition = tr0; }
-    }, 260);
-  }
-  function grab(field, host){
-    var sameHost = (host === held.host);
-    // How much this host is already lifted right now (0 for a fresh host).
-    var applied = (sameHost && held.shift > 0) ? held.shift : 0;
-    // Release a different previously-held host, gliding it back down.
-    if (!sameHost) { letGo(false); }
-    origins(host);
-    gen++;
-    // Natural (unlifted) bottom = current rect plus whatever lift is applied.
-    var natural = field.getBoundingClientRect().bottom + applied;
-    held = { field: field, host: host, bottom: natural, shift: sameHost ? applied : -1 };
-    host.style.transition = host.__k3Tr0 ? (host.__k3Tr0 + ', ' + GLIDE) : GLIDE;
-  }
-  function place(dy){
-    if (dy === held.shift) { return; }
-    held.shift = dy;
-    var tx0 = (typeof held.host.__k3Tx0 === 'string') ? held.host.__k3Tx0 : '';
-    var move = 'translate3d(0px,' + (-dy) + 'px,0px)';
-    held.host.style.transform = tx0 ? (tx0 + ' ' + move) : move;
-  }
-  function reconcile(){
-    var el = editable();
-    if (!el || occupancy <= 0) { letGo(false); return; }
-    var host = pinned(el);
-    if (!host){
-      if (held.host) { letGo(true); }
-      var overlap = el.getBoundingClientRect().bottom + margin() - keyboardTop();
-      if (overlap > GAP) { window.scrollBy(0, overlap); }
-      return;
+    if (shell !== state.shell) {
+      clear();
+      state.shell = shell;
+      state.base = shell.style.transform || '';
     }
-    if (held.field !== el || held.host !== host){
-      grab(el, host);
-    }
-    var need = held.bottom + margin() - keyboardTop();
-    place(need > GAP ? need : 0);
+    // Resting bottom = where it sits right now plus the shift we are already
+    // holding. No transition is in flight, so this reads true every pass.
+    var rest = node.getBoundingClientRect().bottom + state.lift;
+    var need = rest + gapPx() - top;
+    move(need > SLACK ? need : 0);
   }
-  function schedule(){
+  function plan() {
     if (frame) { return; }
-    frame = window.requestAnimationFrame(function(){
-      frame = 0;
-      reconcile();
-    });
+    frame = requestAnimationFrame(function () { frame = 0; settle(); });
+  }
+  function replan() {
+    plan();
+    setTimeout(plan, 120);
+    setTimeout(plan, 320);
   }
 
-  window.__k3Share = function(value){
-    occupancy = value > 0 ? value : 0;
-    if (occupancy <= 0){
-      if (frame) { window.cancelAnimationFrame(frame); frame = 0; }
-      letGo(false);
+  function roost(value) {
+    state.part = value > 0 ? value : 0;
+    if (!(state.part > 0)) {
+      if (frame) { cancelAnimationFrame(frame); frame = 0; }
+      clear();
       return;
     }
-    schedule();
-  };
+    plan();
+  }
+  roost.live = 1;
+  window[MARK] = roost;
 
-  document.addEventListener('focusin', schedule, true);
-  if (window.visualViewport){
-    window.visualViewport.addEventListener('resize', schedule);
-    window.visualViewport.addEventListener('scroll', schedule);
+  document.addEventListener('focusin', replan, true);
+  document.addEventListener('focusout', function () { setTimeout(plan, 0); }, true);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', plan);
+    window.visualViewport.addEventListener('scroll', plan);
   }
 })();
 ''';

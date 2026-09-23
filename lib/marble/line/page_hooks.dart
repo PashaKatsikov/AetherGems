@@ -25,7 +25,7 @@ class PageHooks {
   ) async {
     try {
       await controller.runJavaScript(
-        'window.__k3Share&&window.__k3Share(${share.toStringAsFixed(5)});',
+        'window.__k3Roost&&window.__k3Roost(${share.toStringAsFixed(5)});',
       );
     } catch (_) {}
   }

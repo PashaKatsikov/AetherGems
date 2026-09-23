@@ -147,7 +147,7 @@ class _GateViewState extends State<GateView> with WidgetsBindingObserver {
     _web = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setUserAgent(HandsetMark.userAgent)
-      ..setBackgroundColor(const Color(0xFF071226))
+      ..setBackgroundColor(Colors.black)
       ..enableZoom(false)
       ..setNavigationDelegate(NavigationDelegate(
         onPageStarted: (_) {
@@ -308,7 +308,9 @@ class _GateViewState extends State<GateView> with WidgetsBindingObserver {
         if (!didPop) await _stepBack();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF071226),
+        // The cutout padding reveals this behind the page, so the notch
+        // band reads as solid black rather than navy.
+        backgroundColor: Colors.black,
         resizeToAvoidBottomInset: false,
         body: ValueListenableBuilder<EdgeInsets>(
           valueListenable: _kb.cutout,

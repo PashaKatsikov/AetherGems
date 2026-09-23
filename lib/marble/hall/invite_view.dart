@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../theme.dart';
 import '../../ui/gem_pills.dart';
 import '../line/push_desk.dart';
 import '../line/slate_box.dart';
 import '../tablet/court_spec.dart';
-import '../tablet/plates.dart';
+import 'court_plate.dart';
 import 'gate_view.dart';
 
 class InviteView extends StatefulWidget {
@@ -56,39 +57,51 @@ class _InviteViewState extends State<InviteView> {
     final Size size = MediaQuery.of(context).size;
     final bool landscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
-    final String bg = landscape ? Plates.heraldWide : Plates.heraldTall;
 
-    final Widget body = Scaffold(
-      backgroundColor: const Color(0xFF071226),
-      body: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          Image.asset(bg, fit: BoxFit.cover, width: size.width, height: size.height),
-          Positioned(
-            left: size.width * 0.08,
-            right: size.width * 0.08,
-            bottom: size.height * (landscape ? 0.06 : 0.08),
-            child: landscape ? _wide(size) : _tall(size),
+    return Scaffold(
+      backgroundColor: C.navy,
+      body: DecoratedBox(
+        decoration: courtGradient,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: landscape ? 40 : 28,
+            vertical: 24,
           ),
-        ],
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const CourtGlyph(
+                  icon: Icons.notifications_active_rounded,
+                  tint: C.gold,
+                ),
+                SizedBox(height: landscape ? 16 : 24),
+                const CourtHeadline(
+                  'ALLOW NOTIFICATIONS ABOUT BONUSES AND PROMOS',
+                ),
+                const SizedBox(height: 12),
+                const CourtCaption('Stay tuned for special offers and rewards'),
+                SizedBox(height: landscape ? 24 : 36),
+                landscape ? _wide(size) : _tall(size),
+              ],
+            ),
+          ),
+        ),
       ),
-    );
-
-    if (!landscape) return body;
-    return MediaQuery.removePadding(
-      context: context,
-      removeLeft: true,
-      removeRight: true,
-      child: body,
     );
   }
 
   Widget _tall(Size size) {
-    final double width = size.width * 0.64;
+    final double width = (size.width * 0.66).clamp(220.0, 380.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        GemPill(label: 'Accept', width: width, onTap: _accept),
+        GemPill(
+          label: 'Accept',
+          icon: Icons.notifications_active_rounded,
+          width: width,
+          onTap: _accept,
+        ),
         const SizedBox(height: 14),
         GemPill(label: 'Skip', quiet: true, width: width, onTap: _skip),
       ],
@@ -96,11 +109,17 @@ class _InviteViewState extends State<InviteView> {
   }
 
   Widget _wide(Size size) {
-    final double width = size.width * 0.2;
+    final double width = (size.width * 0.28).clamp(180.0, 320.0);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        GemPill(label: 'Accept', compact: true, width: width, onTap: _accept),
+        GemPill(
+          label: 'Accept',
+          icon: Icons.notifications_active_rounded,
+          compact: true,
+          width: width,
+          onTap: _accept,
+        ),
         const SizedBox(width: 18),
         GemPill(
           label: 'Skip',

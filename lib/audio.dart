@@ -1,15 +1,15 @@
 import 'package:audioplayers/audioplayers.dart';
 
 class Sfx {
-  static const click = 'Aether_Gems_sounds_assets/Button_Click_asset.mp3';
-  static const open = 'Aether_Gems_sounds_assets/Menu_Open_asset.mp3';
-  static const close = 'Aether_Gems_sounds_assets/Menu_Close_asset.mp3';
-  static const reward = 'Aether_Gems_sounds_assets/Reward_Received_asset.mp3';
-  static const win = 'Aether_Gems_sounds_assets/Level_Complete_asset.mp3';
+  static const click = 'Aether_Gems_sounds_assets/AetherGems_Button_Click.mp3';
+  static const open = 'Aether_Gems_sounds_assets/AetherGems_Menu_Open.mp3';
+  static const close = 'Aether_Gems_sounds_assets/AetherGems_Menu_Close.mp3';
+  static const reward = 'Aether_Gems_sounds_assets/AetherGems_Reward_Received.mp3';
+  static const win = 'Aether_Gems_sounds_assets/AetherGems_Level_Complete.mp3';
   static const lose = 'Aether_Gems_sounds_assets/Defeat_asset.mp3';
   static const launch = 'Aether_Gems_sounds_assets/Lightning_Launch_asset.mp3';
-  static const arc = 'Aether_Gems_sounds_assets/Electric_Arc_asset.mp3';
-  static const chain = 'Aether_Gems_sounds_assets/Chain_Reaction_asset.mp3';
+  static const arc = 'Aether_Gems_sounds_assets/AetherGems_Electric_Arc.mp3';
+  static const chain = 'Aether_Gems_sounds_assets/AetherGems_Chain_Reaction.mp3';
   static const altar = 'Aether_Gems_sounds_assets/Altar_Activation_asset.mp3';
   static const crystal = 'Aether_Gems_sounds_assets/Crystal_Activation_asset.mp3';
   static const portal = 'Aether_Gems_sounds_assets/Portal_Open_asset.mp3';

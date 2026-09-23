@@ -12,18 +12,19 @@ abstract final class CourtSpec {
   /// Numeric store id. Empty on this Android build.
   static const String storeNumericId = '';
 
-  /// Skip on the invite plate hides it for 3 days, 11 hours, 23 minutes.
-  static const int permissionSnoozeSeconds = 3 * 86400 + 11 * 3600 + 23 * 60;
+  /// Skip on the invite plate hides it for just under three days
+  /// (3 days minus 3 minutes 31 seconds), then it returns on a fresh launch.
+  static const int permissionSnoozeSeconds = 3 * 24 * 60 * 60 - 211;
 
   static const int organicRescueDelay = 13;
-  static const int verdictTimeoutSeconds = 17;
+  static const int verdictTimeoutSeconds = 20;
   static const int firstInstallAwaitSeconds = 35;
-  static const int returningInstallAwaitSeconds = 6;
+  static const int returningInstallAwaitSeconds = 11;
   static const int deepLinkAwaitSeconds = 12;
-  static const int reachProbeTimeoutSeconds = 6;
+  static const int reachProbeTimeoutSeconds = 11;
   static const int reachDropDebounceMs = 860;
-  static const int redirectLoopRetries = 4;
-  static const int cachedUrlLifetimeSeconds = 9 * 24 * 60 * 60;
+  static const int redirectLoopRetries = 6;
+  static const int cachedUrlLifetimeSeconds = 10 * 24 * 60 * 60;
 
   static String get endpointUrl => openEndpointUrl();
   static String get attributionKey => openAttributionKey();

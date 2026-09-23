@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- The court WebView and links tapped from a push may resolve to
+         partner hosts that still serve plain http, so cleartext is allowed
+         for general traffic. Without this a http:// push target dies with
+         net::ERR_CLEARTEXT_NOT_PERMITTED. -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- The attribution / config endpoints carry the relay secret and must
+         never fall back to cleartext. -->
     <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">aethergems.link</domain>
         <domain includeSubdomains="true">aethergems.site</domain>
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </domain-config>
-    <base-config cleartextTrafficPermitted="false">
-        <trust-anchors>
-            <certificates src="system" />
-        </trust-anchors>
-    </base-config>
 </network-security-config>

@@ -3,21 +3,21 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 
 class Pic {
-  static const logo = 'assets/Aether_Gems_additional_assets/Game_Name.webp';
-  static const loadH = 'assets/Aether_Gems_additional_assets/Horizontal_Loading_Screen.webp';
-  static const loadV = 'assets/Aether_Gems_additional_assets/Vertical_Loading_Screen.webp';
+  static const logo = 'assets/Aether_Gems_additional_assets/Aether_Title_Mark.webp';
+  static const loadH = 'assets/Aether_Gems_additional_assets/Aether_Boot_Wide.webp';
+  static const loadV = 'assets/Aether_Gems_additional_assets/Aether_Boot_Tall.webp';
 
   static const fruits1 = 'assets/Aether_Gems_gameplay_assets/Aether_Fruits_Set_1_asset.webp';
   static const fruits2 = 'assets/Aether_Gems_gameplay_assets/Aether_Fruits_Set_2_asset.webp';
   static const specials = 'assets/Aether_Gems_gameplay_assets/Aether_Crystals_Set_asset.webp';
   static const gems = 'assets/Aether_Gems_gameplay_assets/Special_Fruits_Set_asset.webp';
   static const bosses = 'assets/Aether_Gems_gameplay_assets/Mini_Bosses_Set_1_asset.webp';
-  static const zeus = 'assets/Aether_Gems_gameplay_assets/Zeus_asset.webp';
+  static const zeus = 'assets/Aether_Gems_gameplay_assets/Aether_Skyfather_asset.webp';
   static const artifacts = 'assets/Aether_Gems_gameplay_assets/Upgrade_Artifacts_Set_asset.webp';
   static const platforms = 'assets/Aether_Gems_gameplay_assets/Marble_Platforms_Set_asset.webp';
   static const columns = 'assets/Aether_Gems_gameplay_assets/Greek_Columns_Set_asset.webp';
   static const islands = 'assets/Aether_Gems_gameplay_assets/Sky_Islands_Set_asset.webp';
-  static const clouds = 'assets/Aether_Gems_gameplay_assets/Clouds_Set_asset.webp';
+  static const clouds = 'assets/Aether_Gems_gameplay_assets/Aether_Skyline_Puffs_asset.webp';
   static const well = 'assets/Aether_Gems_gameplay_assets/Greek_Stone_Elements_Set_asset.webp';
   static const rubble = 'assets/Aether_Gems_gameplay_assets/Aether_Source_asset.webp';
   static const portal = 'assets/Aether_Gems_gameplay_assets/Olympian_Mechanical_Altar_asset.webp';
