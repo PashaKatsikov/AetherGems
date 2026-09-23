@@ -171,12 +171,21 @@ class Atlas {
 
   static Future<Atlas> load(void Function(double) onProgress) async {
     final map = <String, ui.Image>{};
-    for (var i = 0; i < Pic.allSheets.length; i++) {
-      final path = Pic.allSheets[i];
+    final total = Pic.allSheets.length;
+    var done = 0;
+    await Future.wait(Pic.allSheets.map((path) async {
       final bg = path.contains('Background');
       map[path] = await decode(path, width: bg ? 1600 : null);
-      onProgress((i + 1) / (Pic.allSheets.length + 1));
-    }
+      done++;
+      onProgress(done / total);
+    }));
     return Atlas(map);
+  }
+
+  void dispose() {
+    for (final image in img.values) {
+      image.dispose();
+    }
+    img.clear();
   }
 }

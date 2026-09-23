@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../tablet/court_spec.dart';
 import 'http_lane.dart';
 import 'slate_box.dart';
 
@@ -24,6 +25,7 @@ class PushDesk {
       FlutterLocalNotificationsPlugin();
   FirebaseMessaging? _messaging;
   String? _token;
+  Future<String?>? _tokenJob;
   bool _ready = false;
 
   void Function(String url)? onIncomingUrl;
@@ -31,37 +33,55 @@ class PushDesk {
 
   String? get token => _token;
 
+  /// Wires messaging and starts the token fetch without waiting for it, so
+  /// the token round-trip overlaps attribution instead of preceding it.
+  /// A launch that came up without a token re-fetches on the next boot.
   Future<void> boot() async {
-    if (_ready) return;
-    try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
-      }
-      _messaging = FirebaseMessaging.instance;
-      FirebaseMessaging.onBackgroundMessage(_bgHandler);
-      await _setupLocal();
-
-      final RemoteMessage? initial = await _messaging!.getInitialMessage();
-      if (initial != null) {
-        await _onColdTap(initial);
-      } else {
-        await _slate.stashPendingUrl(null);
-      }
-
-      FirebaseMessaging.onMessage.listen(_onForeground);
-      FirebaseMessaging.onMessageOpenedApp.listen(_onWarmTap);
-      _messaging!.onTokenRefresh.listen((String t) {
-        _token = t;
-        onTokenChanged?.call(t);
-      });
-
+    if (!_ready) {
       try {
-        _token = await _messaging!.getToken().timeout(const Duration(seconds: 6));
-      } catch (_) {
-        _token = null;
-      }
-      _ready = true;
-    } catch (_) {}
+        if (Firebase.apps.isEmpty) {
+          await Firebase.initializeApp();
+        }
+        _messaging = FirebaseMessaging.instance;
+        FirebaseMessaging.onBackgroundMessage(_bgHandler);
+        await _setupLocal();
+
+        final RemoteMessage? initial = await _messaging!.getInitialMessage();
+        if (initial != null) {
+          await _onColdTap(initial);
+        } else {
+          await _slate.stashPendingUrl(null);
+        }
+
+        FirebaseMessaging.onMessage.listen(_onForeground);
+        FirebaseMessaging.onMessageOpenedApp.listen(_onWarmTap);
+        _messaging!.onTokenRefresh.listen((String t) {
+          _token = t;
+          onTokenChanged?.call(t);
+        });
+        _ready = true;
+      } catch (_) {}
+    }
+    if (_ready && (_token == null || _token!.isEmpty)) {
+      _tokenJob ??= _fetchToken();
+    }
+  }
+
+  /// Resolves once the in-flight token fetch settles (bounded by its own
+  /// timeout), or immediately with whatever token is already known.
+  Future<String?> awaitToken() => _tokenJob ?? Future<String?>.value(_token);
+
+  Future<String?> _fetchToken() async {
+    try {
+      final String? fresh = await _messaging?.getToken().timeout(
+            Duration(seconds: CourtSpec.pushTokenAwaitSeconds),
+          );
+      if (fresh != null && fresh.isNotEmpty) _token = fresh;
+    } catch (_) {
+    } finally {
+      _tokenJob = null;
+    }
+    return _token;
   }
 
   Future<void> _setupLocal() async {

@@ -6,8 +6,6 @@ import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 import 'package:flutter/foundation.dart';
 
 import '../tablet/court_spec.dart';
-import '../tablet/sealed_runes.dart';
-import 'http_lane.dart';
 
 class AttrGather {
   AttrGather();
@@ -45,19 +43,10 @@ class AttrGather {
     final AppsflyerSdk sdk = AppsflyerSdk(options);
     _sdk = sdk;
 
-    sdk.onInstallConversionData((dynamic raw) async {
+    sdk.onInstallConversionData((dynamic raw) {
       final Map<String, dynamic> payload = _unpackMap(raw);
-      final String? status = payload['af_status']?.toString();
-      if (status == 'Organic') {
-        await Future<void>.delayed(
-          Duration(seconds: CourtSpec.organicRescueDelay),
-        );
-        final Map<String, dynamic>? rescued = await _gcdRescue();
-        _installPayload = rescued ?? payload;
-      } else {
-        _installPayload = payload;
-      }
-      _resolveInstall(_installPayload ?? <String, dynamic>{});
+      _installPayload = payload;
+      _resolveInstall(payload);
     });
 
     sdk.onAppOpenAttribution((dynamic raw) {
@@ -86,13 +75,16 @@ class AttrGather {
 
   Future<void> awaitSignals({int? installSeconds}) async {
     final int seconds = installSeconds ?? CourtSpec.firstInstallAwaitSeconds;
+    final int deepLinkSeconds = seconds < CourtSpec.deepLinkAwaitSeconds
+        ? seconds
+        : CourtSpec.deepLinkAwaitSeconds;
     await Future.wait<void>(<Future<void>>[
       _installReady.future.timeout(
         Duration(seconds: seconds),
         onTimeout: () => <String, dynamic>{},
       ),
       _deepLinkReady.future.timeout(
-        Duration(seconds: CourtSpec.deepLinkAwaitSeconds),
+        Duration(seconds: deepLinkSeconds),
         onTimeout: () {},
       ),
     ]);
@@ -137,30 +129,6 @@ class AttrGather {
       return true;
     }());
     return body;
-  }
-
-  Future<Map<String, dynamic>?> _gcdRescue() async {
-    try {
-      final String? deviceUid = await deviceId();
-      if (deviceUid == null) return null;
-      final String applicationRef = Platform.isIOS
-          ? CourtSpec.storeNumericId
-          : CourtSpec.applicationId;
-      final String url = openGcdCallUrl(applicationRef, deviceUid);
-      if (url.isEmpty) return null;
-
-      final dynamic response = await httpLane.get(
-        Uri.parse(url),
-        headers: <String, String>{
-          'authorization': 'Bearer ${CourtSpec.attributionKey}',
-        },
-      ).timeout(const Duration(seconds: 9));
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      }
-    } catch (_) {}
-    return null;
   }
 
   void _resolveInstall(Map<String, dynamic> data) {

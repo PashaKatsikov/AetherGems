@@ -34,59 +34,86 @@ class BootPage extends StatefulWidget {
 }
 
 class _BootPageState extends State<BootPage> {
-  /// Shortest time a full 0..100 sweep may take. The atlas is quick once
-  /// warm, so the fill is paced on its own clock instead of snapping.
-  static const int _fillMillis = 2600;
+  /// Fastest a full 0..100 sweep may run when the work is already ahead of
+  /// the bar, so a warm cache still reads as a fill rather than a snap.
+  static const int _sweepMillis = 1800;
   static const Duration _beat = Duration(milliseconds: 16);
 
-  /// A long config wait would park the bar on one checkpoint for seconds,
-  /// so it drifts on its own — but never into the hand-off zone.
-  static const double _driftPerBeat = 0.0004;
-  static const double _driftCap = 0.9;
+  /// While work is pending the bar eases toward the phase ceiling by this
+  /// share of the remaining gap per beat: it keeps moving, slows down, and
+  /// never reaches the ceiling on its own.
+  static const double _creepPerBeat = 0.005;
 
-  double _target = 0;
+  /// 100% is shown only this long before the hand-off.
+  static const Duration _fullHold = Duration(milliseconds: 150);
+
+  static const double _decisionTo = 0.60;
+  static const double _decisionCap = 0.57;
+  static const double _prepTo = 0.68;
+  static const double _assetsTo = 0.95;
+
+  /// Confirmed by finished work; the bar catches up to it at sweep speed.
+  double _floor = 0;
+
+  /// Soft ceiling of the current phase; the bar creeps toward it while the
+  /// work inside the phase is still pending. Only the hand-off lifts it to 1.
+  double _cap = 0;
   double _shown = 0;
   Timer? _ticker;
   bool _loading = false;
   String? _err;
 
-  /// Raises the work target; the ticker walks the bar up to it.
-  void _aim(double v) {
-    if (v > _target) _target = v;
+  double _atlasShare = 0;
+  bool _assetPhase = false;
+
+  void _reach(double floor, {required double cap}) {
+    if (floor > _floor) _floor = floor;
+    if (cap > _cap) _cap = cap;
   }
 
+  void _onAtlas(double share) {
+    _atlasShare = share;
+    if (_assetPhase) _aimAtlas();
+  }
+
+  void _aimAtlas() => _reach(
+        _prepTo + _atlasShare * (_assetsTo - _prepTo),
+        cap: _assetsTo,
+      );
+
   void _startBar() {
-    final double step = _beat.inMilliseconds / _fillMillis;
+    final double step = _beat.inMilliseconds / _sweepMillis;
     _ticker = Timer.periodic(_beat, (_) {
       if (!mounted) return;
-      if (_shown >= _target) {
-        if (_target >= _driftCap) return;
-        _target = _target + _driftPerBeat;
-        if (_target > _driftCap) _target = _driftCap;
+      double next;
+      if (_shown < _floor) {
+        next = _shown + step;
+        if (next > _floor) next = _floor;
+      } else if (_shown < _cap) {
+        double creep = (_cap - _shown) * _creepPerBeat;
+        if (creep > step) creep = step;
+        next = _shown + creep;
+      } else {
+        return;
       }
-      final double next = _shown + step;
-      setState(() => _shown = next > _target ? _target : next);
+      setState(() => _shown = next);
     });
   }
 
-  /// Waits for the bar to actually reach what the work has claimed, with a
-  /// ceiling so a stalled ticker can never wedge the boot.
-  Future<void> _barCatchUp() async {
-    int guard = _fillMillis ~/ _beat.inMilliseconds + 60;
-    while (mounted && _shown < _target - 0.001 && guard > 0) {
+  /// Drives the bar to a full 100 right before the hand-off, so every
+  /// launch — court or native game — ends on a completed bar and nothing
+  /// else sits between 100% and the next screen.
+  Future<void> _finishBar() async {
+    _reach(1, cap: 1);
+    int guard = _sweepMillis ~/ _beat.inMilliseconds + 60;
+    while (mounted && _shown < 1 - 0.001 && guard > 0) {
       guard--;
       await Future<void>.delayed(_beat);
     }
-  }
-
-  /// Drives the bar to a full 100 and lets it sit there, so every hand-off
-  /// — court or native game — ends on a completed bar.
-  Future<void> _finishBar() async {
-    _aim(1);
-    await _barCatchUp();
     if (!mounted) return;
+    _ticker?.cancel();
     setState(() => _shown = 1);
-    await Future<void>.delayed(const Duration(milliseconds: 850));
+    await Future<void>.delayed(_fullHold);
   }
 
   @override
@@ -126,18 +153,28 @@ class _BootPageState extends State<BootPage> {
 
       // From here the loading screen is genuinely up, so the bar and its
       // percent stay on screen the whole time, climbing through the config
-      // decision and then the asset load. The decision phase owns 0..0.50.
+      // decision (0..60) and then the asset load (60..95).
       if (!mounted) return;
-      setState(() {
-        _loading = true;
-        _target = 0.04;
-      });
+      setState(() => _loading = true);
+      _reach(0.04, cap: _decisionCap);
       _startBar();
 
+      // A returning arena player almost always lands in the native game, so
+      // the sheets decode while the config call is still out.
+      Future<Atlas>? preload;
+      if (widget.slate.route == RouteMark.arena) {
+        preload = Atlas.load(_onAtlas)..ignore();
+      }
+
       final Arrival arrival = await widget.gate.decide(
-        onProgress: (double v) => _aim(0.04 + v * 0.46),
+        onProgress: (double v) => _reach(v * _decisionTo, cap: _decisionCap),
       );
       if (!mounted) return;
+      _reach(_decisionTo, cap: _decisionTo);
+
+      if (arrival is! PlayArrival && preload != null) {
+        unawaited(preload.then((Atlas a) => a.dispose(), onError: (_) {}));
+      }
 
       // Offline is a dead end rather than a finished load, so it shows at
       // once instead of pretending to complete.
@@ -150,8 +187,8 @@ class _BootPageState extends State<BootPage> {
         return;
       }
 
-      // The court is the app for this user, so the bar completes and holds
-      // exactly like the native hand-off does.
+      // The court is the app for this user, so the bar completes right
+      // before the hand-off exactly like the native one does.
       if (arrival is PortalArrival) {
         final String url = arrival.url;
         await _finishBar();
@@ -162,29 +199,30 @@ class _BootPageState extends State<BootPage> {
         return;
       }
 
-      // Native game. Each group raises the target; the ticker below is what
-      // the user actually sees, so a cached atlas cannot skip the fill.
+      // Native game.
+      _reach(_decisionTo, cap: _prepTo);
       final save = await SaveFile.read();
       if (!mounted) return;
-      _aim(0.58);
 
       final audio = AudioHub()
         ..sound = save.sound
         ..music = save.music;
       await audio.warm();
       if (!mounted) return;
-      _aim(0.70);
+      _reach(_prepTo, cap: _assetsTo);
 
-      final atlas = await Atlas.load((v) => _aim(0.70 + v * 0.22));
+      _assetPhase = true;
+      _aimAtlas();
+      final atlas = await (preload ?? Atlas.load(_onAtlas));
       if (!mounted) return;
-      _aim(0.94);
+      _reach(_assetsTo, cap: _assetsTo);
 
       await audio.startWind();
       if (!mounted) return;
 
-      // The bar fills to a full 100 and holds there before anything else
-      // moves. The orientation flip used to fire at 94%, and that flip is
-      // what read as the game starting ahead of the bar.
+      // The bar fills to a full 100 before anything else moves. The
+      // orientation flip used to fire early, and that flip is what read as
+      // the game starting ahead of the bar.
       await _finishBar();
       if (!mounted) return;
 

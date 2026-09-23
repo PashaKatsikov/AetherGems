@@ -135,9 +135,10 @@ class MarbleGate {
   }
 
   Future<Ruling> _requestRuling({String? token}) async {
+    final String? pushToken = token ?? await desk.awaitToken();
     final Map<String, dynamic> body = await gather.compose(
       locale: Platform.localeName.replaceAll('-', '_'),
-      pushToken: token ?? desk.token,
+      pushToken: pushToken,
     );
     return ruling.ask(body);
   }
